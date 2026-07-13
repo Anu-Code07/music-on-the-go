@@ -106,52 +106,64 @@ class _DiscoverPageState extends State<DiscoverPage> {
                 ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                  child: GlassPanel(
-                    borderRadius: 28,
-                    blur: 24,
-                    tint: Colors.white.withValues(alpha: 0.55),
-                    borderOpacity: 0.7,
-                    padding: const EdgeInsets.fromLTRB(6, 6, 6, 6),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _controller,
-                            onChanged: (_) => setState(() {}),
-                            onSubmitted: (_) => _runSearch(),
-                            style: GoogleFonts.dmSans(
-                              color: StudioColors.ink,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w500,
-                            ),
-                            decoration: InputDecoration(
-                              hintText: 'Search Jamendo…',
-                              hintStyle: GoogleFonts.dmSans(
-                                color: StudioColors.stone,
-                                fontSize: 15,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: GlassPanel(
+                          borderRadius: 28,
+                          blur: 24,
+                          tint: Colors.white.withValues(alpha: 0.55),
+                          borderOpacity: 0.7,
+                          padding: const EdgeInsets.fromLTRB(4, 4, 4, 4),
+                          child: Row(
+                            children: [
+                              const SizedBox(width: 10),
+                              const Icon(
+                                Icons.search_rounded,
+                                color: StudioColors.steel,
+                                size: 22,
                               ),
-                              border: InputBorder.none,
-                              enabledBorder: InputBorder.none,
-                              focusedBorder: InputBorder.none,
-                              filled: false,
-                              isDense: true,
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 14,
+                              Expanded(
+                                child: TextField(
+                                  controller: _controller,
+                                  onChanged: (_) => setState(() {}),
+                                  onSubmitted: (_) => _runSearch(),
+                                  textInputAction: TextInputAction.search,
+                                  style: GoogleFonts.dmSans(
+                                    color: StudioColors.ink,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  decoration: InputDecoration(
+                                    hintText: 'Search Jamendo…',
+                                    hintStyle: GoogleFonts.dmSans(
+                                      color: StudioColors.stone,
+                                      fontSize: 15,
+                                    ),
+                                    border: InputBorder.none,
+                                    enabledBorder: InputBorder.none,
+                                    focusedBorder: InputBorder.none,
+                                    filled: false,
+                                    isDense: true,
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 14,
+                                    ),
+                                  ),
+                                ),
                               ),
-                            ),
+                              if (_controller.text.isNotEmpty)
+                                _GlassIconButton(
+                                  icon: Icons.close_rounded,
+                                  onPressed: _clearSearch,
+                                ),
+                            ],
                           ),
                         ),
-                        if (_controller.text.isNotEmpty) ...[
-                          _GlassIconButton(
-                            icon: Icons.close_rounded,
-                            onPressed: _clearSearch,
-                          ),
-                          const SizedBox(width: 6),
-                        ],
-                        _SearchButton(onPressed: _runSearch),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(width: 10),
+                      _SearchButton(onPressed: _runSearch),
+                    ],
                   ),
                 ),
                 Expanded(
@@ -298,30 +310,23 @@ class _SearchButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: StudioColors.brandCoral,
+      elevation: 0,
       borderRadius: BorderRadius.circular(999),
+      shadowColor: StudioColors.brandCoral.withValues(alpha: 0.4),
       child: InkWell(
         onTap: onPressed,
         borderRadius: BorderRadius.circular(999),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.search_rounded,
-                color: StudioColors.onPrimary,
-                size: 18,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                'Search',
-                style: GoogleFonts.dmSans(
-                  color: StudioColors.onPrimary,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
-                ),
-              ),
-            ],
+        child: Container(
+          height: 52,
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+          alignment: Alignment.center,
+          child: Text(
+            'Search',
+            style: GoogleFonts.dmSans(
+              color: StudioColors.onPrimary,
+              fontWeight: FontWeight.w700,
+              fontSize: 14,
+            ),
           ),
         ),
       ),
