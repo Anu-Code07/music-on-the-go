@@ -9,11 +9,23 @@ import '../../../playlist/domain/entities/playlist.dart';
 
 class LocalLibraryDataSource {
   Database? _db;
+  Future<Database>? _openFuture;
 
   Future<Database> get database async {
     if (_db != null) return _db!;
-    _db = await _open();
-    return _db!;
+    // Serialize first open — seed + Library + Playlists used to race and
+    // throw SQLITE_BUSY on PRAGMA journal_mode.
+    _openFuture ??= () async {
+      try {
+        final db = await _open();
+        _db = db;
+        return db;
+      } catch (e) {
+        _openFuture = null;
+        rethrow;
+      }
+    }();
+    return _openFuture!;
   }
 
   Future<Database> _open() async {
@@ -22,6 +34,11 @@ class LocalLibraryDataSource {
     return openDatabase(
       path,
       version: 1,
+      singleInstance: true,
+      onConfigure: (db) async {
+        await db.rawQuery('PRAGMA busy_timeout = 5000');
+        await db.execute('PRAGMA journal_mode=WAL');
+      },
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE tracks (

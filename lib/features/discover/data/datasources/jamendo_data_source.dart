@@ -22,7 +22,8 @@ class JamendoDataSource {
         'client_id': ApiKeys.jamendoClientId,
         'format': 'json',
         'limit': 30,
-        'search': query.trim(),
+        // Jamendo v3: `search` returns empty for some clients; use namesearch.
+        'namesearch': query.trim(),
         'include': 'musicinfo',
         'audioformat': 'mp32',
       },
@@ -31,18 +32,29 @@ class JamendoDataSource {
   }
 
   Future<List<Track>> getPopularTracks() async {
-    final response = await _dio.get<Map<String, dynamic>>(
-      '${ApiKeys.jamendoBaseUrl}/tracks/',
-      queryParameters: {
-        'client_id': ApiKeys.jamendoClientId,
-        'format': 'json',
-        'limit': 30,
-        'order': 'popularity_total',
-        'include': 'musicinfo',
-        'audioformat': 'mp32',
-      },
-    );
-    return _parseTracks(response.data);
+    // Prefer total popularity. Some order values (e.g. popularity_month,
+    // featured) intermittently return 0 for this client_id.
+    Future<List<Track>> fetch(String order) async {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '${ApiKeys.jamendoBaseUrl}/tracks/',
+        queryParameters: {
+          'client_id': ApiKeys.jamendoClientId,
+          'format': 'json',
+          'limit': 30,
+          'order': order,
+          'include': 'musicinfo',
+          'audioformat': 'mp32',
+        },
+      );
+      return _parseTracks(response.data);
+    }
+
+    try {
+      final tracks = await fetch('popularity_total');
+      if (tracks.isNotEmpty) return tracks;
+    } catch (_) {}
+
+    return fetch('buzzrate');
   }
 
   Future<Track> downloadTrack(Track track) async {
@@ -52,11 +64,29 @@ class JamendoDataSource {
     }
 
     final musicDir = await _musicDirectory();
-    final id = track.jamendoId ?? track.id;
+    final id = track.jamendoId ?? track.id.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
     final audioPath = p.join(musicDir.path, '$id.mp3');
     final artPath = p.join(musicDir.path, '$id.jpg');
 
-    await _dio.download(downloadUrl, audioPath);
+    try {
+      await _dio.download(
+        downloadUrl,
+        audioPath,
+        options: Options(
+          followRedirects: true,
+          validateStatus: (s) => s != null && s < 400,
+          receiveTimeout: const Duration(minutes: 2),
+          sendTimeout: const Duration(seconds: 30),
+        ),
+      );
+    } on DioException catch (e) {
+      throw Exception('Download failed: ${e.message ?? e.type.name}');
+    }
+
+    final file = File(audioPath);
+    if (!await file.exists() || await file.length() < 1024) {
+      throw Exception('Downloaded file is empty or too small');
+    }
 
     String? savedArtPath;
     final artUrl = track.artworkUrl;

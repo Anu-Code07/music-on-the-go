@@ -7,15 +7,13 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/router/app_shell.dart';
 import '../../../../core/theme/studio_colors.dart';
 import '../../../../core/widgets/album_art.dart';
+import '../../../../core/widgets/play_now.dart';
 import '../../../../core/widgets/product_identity_card.dart';
 import '../../../../core/widgets/studio_pill_button.dart';
 import '../../../discover/presentation/bloc/discover_bloc.dart';
 import '../../../library/domain/entities/track.dart';
 import '../../../library/presentation/bloc/library_bloc.dart';
-import '../../../player/presentation/bloc/player_bloc.dart';
-import '../../../player/presentation/pages/now_playing_page.dart';
 import '../../../playlist/presentation/bloc/playlist_bloc.dart';
-import '../../../../core/di/injection.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -266,17 +264,7 @@ class _DiscoverMatrix extends StatelessWidget {
                 width: 168,
                 height: 210,
                 badge: i == 0 ? 'NEW' : null,
-                onTap: () {
-                  context.read<PlayerBloc>().add(Play(track));
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => BlocProvider.value(
-                        value: getIt<PlayerBloc>(),
-                        child: const NowPlayingPage(),
-                      ),
-                    ),
-                  );
-                },
+                onTap: () => playAndOpenNowPlaying(context, track),
                 child: Align(
                   alignment: Alignment.topLeft,
                   child: ClipRRect(
@@ -324,17 +312,7 @@ class _QuietTrackCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        context.read<PlayerBloc>().add(Play(track));
-        Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (_) => BlocProvider.value(
-              value: getIt<PlayerBloc>(),
-              child: const NowPlayingPage(),
-            ),
-          ),
-        );
-      },
+      onTap: () => playAndOpenNowPlaying(context, track),
       child: Container(
         width: 132,
         padding: const EdgeInsets.all(12),

@@ -41,13 +41,15 @@ final class DiscoverLoaded extends DiscoverState {
     List<Track>? tracks,
     String? query,
     double? downloadProgress,
-    String? savingTrackId,
+    Object? savingTrackId = _keep,
   }) {
     return DiscoverLoaded(
       tracks: tracks ?? this.tracks,
       query: query ?? this.query,
       downloadProgress: downloadProgress ?? this.downloadProgress,
-      savingTrackId: savingTrackId,
+      savingTrackId: identical(savingTrackId, _keep)
+          ? this.savingTrackId
+          : savingTrackId as String?,
     );
   }
 
@@ -55,11 +57,22 @@ final class DiscoverLoaded extends DiscoverState {
   List<Object?> get props => [tracks, query, downloadProgress, savingTrackId];
 }
 
+const _keep = Object();
+
 final class DiscoverError extends DiscoverState {
   const DiscoverError(this.message);
   final String message;
   @override
   List<Object?> get props => [message];
+}
+
+final class DiscoverSaveFailed extends DiscoverState {
+  const DiscoverSaveFailed(this.message, {required this.tracks, required this.query});
+  final String message;
+  final List<Track> tracks;
+  final String query;
+  @override
+  List<Object?> get props => [message, tracks, query];
 }
 
 sealed class DiscoverEvent extends Equatable {
@@ -144,12 +157,13 @@ class DiscoverBloc extends Bloc<DiscoverEvent, DiscoverState> {
         emit(live.copyWith(savingTrackId: null, downloadProgress: 1));
       }
     } catch (e) {
-      final live = state;
-      if (live is DiscoverLoaded) {
-        emit(live.copyWith(savingTrackId: null, downloadProgress: 0));
-      } else {
-        emit(DiscoverError(e is Failure ? e.message : e.toString()));
-      }
+      final message = e is Failure ? e.message : e.toString();
+      emit(DiscoverSaveFailed(
+        message,
+        tracks: current.tracks,
+        query: current.query,
+      ));
+      emit(DiscoverLoaded(tracks: current.tracks, query: current.query));
     }
   }
 }

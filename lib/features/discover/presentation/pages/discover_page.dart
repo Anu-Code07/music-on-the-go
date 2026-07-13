@@ -4,14 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../../core/di/injection.dart';
 import '../../../../core/theme/studio_colors.dart';
 import '../../../../core/widgets/glass_panel.dart';
+import '../../../../core/widgets/play_now.dart';
 import '../../../../core/widgets/studio_pill_button.dart';
 import '../../../../core/widgets/track_list_tile.dart';
 import '../../../library/presentation/bloc/library_bloc.dart';
-import '../../../player/presentation/bloc/player_bloc.dart';
-import '../../../player/presentation/pages/now_playing_page.dart';
 import '../../presentation/bloc/discover_bloc.dart';
 
 class DiscoverPage extends StatefulWidget {
@@ -168,10 +166,26 @@ class _DiscoverPageState extends State<DiscoverPage> {
                 ),
                 Expanded(
                   child: BlocConsumer<DiscoverBloc, DiscoverState>(
+                    listenWhen: (prev, next) {
+                      if (next is DiscoverSaveFailed) return true;
+                      if (prev is DiscoverLoaded &&
+                          next is DiscoverLoaded &&
+                          prev.savingTrackId != null &&
+                          next.savingTrackId == null &&
+                          next.downloadProgress >= 1) {
+                        return true;
+                      }
+                      return false;
+                    },
                     listener: (context, state) {
-                      if (state is DiscoverLoaded &&
-                          state.downloadProgress >= 1 &&
-                          state.savingTrackId == null) {
+                      if (state is DiscoverSaveFailed) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Save failed: ${state.message}'),
+                            backgroundColor: StudioColors.error,
+                          ),
+                        );
+                      } else if (state is DiscoverLoaded) {
                         context
                             .read<LibraryBloc>()
                             .add(const RefreshLibrary());
@@ -182,6 +196,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
                         );
                       }
                     },
+                    buildWhen: (prev, next) => next is! DiscoverSaveFailed,
                     builder: (context, state) {
                       if (state is DiscoverLoading) {
                         return Center(
@@ -250,17 +265,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
                             padding: EdgeInsets.zero,
                             child: TrackListTile(
                               track: track,
-                              onTap: () {
-                                context.read<PlayerBloc>().add(Play(track));
-                                Navigator.of(context).push(
-                                  MaterialPageRoute<void>(
-                                    builder: (_) => BlocProvider.value(
-                                      value: getIt<PlayerBloc>(),
-                                      child: const NowPlayingPage(),
-                                    ),
-                                  ),
-                                );
-                              },
+                              onTap: () => playAndOpenNowPlaying(context, track),
                               trailing: saving
                                   ? Padding(
                                       padding: const EdgeInsets.only(right: 8),
