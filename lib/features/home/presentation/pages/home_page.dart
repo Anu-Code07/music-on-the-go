@@ -43,6 +43,7 @@ class HomePage extends StatelessWidget {
             const SliverToBoxAdapter(child: _LikedRail()),
             SliverToBoxAdapter(child: _sectionLabel('Your playlists')),
             const SliverToBoxAdapter(child: _PlaylistChips()),
+            const SliverToBoxAdapter(child: _MadeBy()),
             const SliverToBoxAdapter(child: SizedBox(height: 160)),
           ],
         ),
@@ -416,6 +417,27 @@ class _PlaylistChips extends StatelessWidget {
     if (name != null && name.trim().isNotEmpty && context.mounted) {
       context.read<PlaylistBloc>().add(Create(name));
     }
+  }
+}
+
+class _MadeBy extends StatelessWidget {
+  const _MadeBy();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 36, 24, 8),
+      child: Text(
+        'Made by Anurag',
+        textAlign: TextAlign.center,
+        style: GoogleFonts.dmSans(
+          color: StudioColors.muted,
+          fontSize: 12,
+          fontWeight: FontWeight.w400,
+          letterSpacing: 0.4,
+        ),
+      ),
+    );
   }
 }
 

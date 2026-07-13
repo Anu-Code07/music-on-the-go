@@ -24,3 +24,7 @@ Discover free tracks, save them to your library, and keep listening from the Loc
 Flutter · Clean Architecture · BLoC  
 
 Designed for a focused listening experience — not another crowded streaming feed.
+
+<br />
+
+<sub>Made by [Anurag](https://github.com/Anu-Code07)</sub>
