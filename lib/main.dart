@@ -51,6 +51,7 @@ class _AriaAppState extends State<AriaApp> {
       try {
         final session = await AudioSession.instance;
         await session.configure(const AudioSessionConfiguration.music());
+        await session.setActive(true);
       } catch (e) {
         debugPrint('AudioSession skipped: $e');
       }

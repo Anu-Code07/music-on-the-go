@@ -1,3 +1,4 @@
+import 'package:audio_session/audio_session.dart';
 import 'package:just_audio/just_audio.dart';
 
 import '../../../library/domain/entities/track.dart';
@@ -22,10 +23,23 @@ class AudioPlayerDataSource {
   Track? get currentTrack =>
       _queue.isEmpty || _currentIndex >= _queue.length ? null : _queue[_currentIndex];
 
+  Future<void> _prepareOutput() async {
+    try {
+      final session = await AudioSession.instance;
+      await session.setActive(true);
+    } catch (_) {}
+    // Guard against a silent player (volume stuck at 0).
+    if (_player.volume < 0.99) {
+      await _player.setVolume(1.0);
+    }
+  }
+
   Future<void> playTrack(Track track) async {
     _queue = [track];
     _currentIndex = 0;
+    await _prepareOutput();
     await _player.setAudioSource(_sourceForTrack(track));
+    await _player.setVolume(1.0);
     await _player.play();
   }
 
@@ -33,16 +47,21 @@ class AudioPlayerDataSource {
     if (tracks.isEmpty) return;
     _queue = List.of(tracks);
     _currentIndex = index.clamp(0, tracks.length - 1);
+    await _prepareOutput();
     final playlist = ConcatenatingAudioSource(
       children: tracks.map(_sourceForTrack).toList(),
     );
     await _player.setAudioSource(playlist, initialIndex: _currentIndex);
+    await _player.setVolume(1.0);
     await _player.play();
   }
 
   Future<void> pause() => _player.pause();
 
-  Future<void> resume() => _player.play();
+  Future<void> resume() async {
+    await _prepareOutput();
+    await _player.play();
+  }
 
   Future<void> seek(Duration position) => _player.seek(position);
 
