@@ -1,96 +1,147 @@
-# music-on-the-go
+# Aria
 
-**Aria** — a minimal, offline-first local music player with a MiniMax-inspired light UI (white canvas, black pill CTAs, vibrant product cards, glass chrome).
+### music-on-the-go
+
+Offline-first music player — MiniMax light chrome, vibrant product cards, immersive Now Playing, and Live Activities.
+
+<p align="center">
+  <img src="docs/screenshots/home.png" alt="Aria Home" width="280" />
+  &nbsp;&nbsp;
+  <img src="docs/screenshots/now-playing.png" alt="Aria Now Playing" width="280" />
+</p>
+
+<p align="center">
+  <em>Home — product matrix &amp; discover · Now Playing — art-driven glass controls</em>
+</p>
+
+---
+
+## Screenshots
+
+| Home | Now Playing |
+|:---:|:---:|
+| ![Home](docs/screenshots/home.png) | ![Now Playing](docs/screenshots/now-playing.png) |
+| Greeting, colorful Music / Library / EQ cards, recents & Discover rails | Blurred art backdrop, glass scrubber, shuffle · skip · play · repeat |
+
+---
+
+## Quick facts
 
 | | |
 |---|---|
-| **Display name** | Aria |
+| **App name** | Aria |
+| **Repo** | [music-on-the-go](https://github.com/Anu-Code07/music-on-the-go) |
 | **Flutter package** | `studio` |
-| **Android / iOS ID** | `com.anurag.studio` |
-| **iOS widgets** | `com.anurag.studio.AriaWidgets` |
+| **Bundle / application ID** | `com.anurag.studio` |
+| **iOS widget extension** | `com.anurag.studio.AriaWidgets` |
 | **App Group** | `group.com.anurag.studio` |
+| **Stack** | Flutter · BLoC · GetIt · just_audio · sqflite |
+
+---
 
 ## Features
 
-- **Home** — greeting hero, MiniMax-style colorful product cards, recents / discover / liked / playlists
-- **Discover** — Jamendo search + Save (download to device); glass search bar + coral Search button
-- **Library** — local tracks, likes, import
-- **Playlists** — create and manage
-- **Now Playing** — full-screen immersive art + glass controls
-- **Equalizer** — presets; realtime on Android
-- **Live Activities** — iOS lock screen / Dynamic Island; Android ongoing notification
-- **Home widgets** — Now Playing tile on iOS & Android
-- **Seed library** — bundled tracks under `assets/seed/`
+- **Home** — ARIA wordmark, time-based greeting, MiniMax product cards (Music · Library · EQ · Liked), recently played, Discover matrix, liked songs, playlists  
+- **Discover** — Jamendo search with frosted glass field + coral **Search** button; Save downloads tracks offline  
+- **Library** — local library, likes, file import  
+- **Playlists** — create and organize queues  
+- **Now Playing** — full-screen immersive player (art blur, glass control sheet, like / shuffle / repeat)  
+- **Equalizer** — color band UI; realtime EQ on Android  
+- **Live Activities** — iOS Lock Screen + Dynamic Island; Android ongoing now-playing notification  
+- **Home widgets** — “Aria Now Playing” on iOS & Android  
+- **Seed library** — demo tracks in `assets/seed/` for first launch  
+
+---
+
+## Design
+
+MiniMax-inspired dual identity: stark white marketing chrome + saturated product cards.
+
+| Token | Value |
+|---|---|
+| Type | DM Sans |
+| Canvas | `#FFFFFF` |
+| Primary CTA | `#0A0A0A` (black pill) |
+| Coral accent | `#FF5530` |
+| Product cards | coral · magenta · blue · purple (32px radius) |
+| Glass | frosted panels on Discover, mini-player, Now Playing, dock |
+
+Brand colors stay on product-identity moments — not on generic body text or standard buttons.
+
+---
 
 ## Architecture
 
-Clean Architecture + BLoC under `lib/features/{home,player,library,playlist,discover,equalizer}/`:
+Clean Architecture + BLoC:
 
 ```
-feature/
-├── data/        # datasources, models, repository impl
-├── domain/      # entities, repositories, usecases
-└── presentation # bloc, pages, widgets
+lib/features/<feature>/
+├── data/           # datasources, repository impl
+├── domain/         # entities, repositories, usecases
+└── presentation/   # bloc, pages, widgets
 ```
 
-DI via GetIt (`lib/core/di/injection.dart`). Playback via `just_audio` + `audio_session`.
+Features: `home` · `player` · `library` · `playlist` · `discover` · `equalizer`  
+DI: GetIt · Playback: `just_audio` + `audio_session` · Persistence: sqflite (`studio.db`)
 
-## How music is saved
+---
 
-1. Discover → **Save** downloads the MP3 (and optional art) into app documents: `{Documents}/music/{id}.mp3`
-2. Metadata is upserted into SQLite (`studio.db` → `tracks`)
-3. Track becomes playable offline (`is_local: true`)
+## How saving works
 
-Playing without Save can stream / upsert recents; it does **not** download the file.
+1. Discover → **Save** downloads MP3 (+ optional artwork) to `{Documents}/music/{id}.mp3`  
+2. Row upserted in SQLite `tracks` with `is_local: true`  
+3. Track plays offline from disk  
 
-## Design system (MiniMax)
+Play without Save can stream and update recents — it does **not** download the file.
 
-- **Type:** DM Sans  
-- **Canvas:** `#FFFFFF` · **Ink / CTA:** `#0A0A0A` · **Coral:** `#FF5530`  
-- **Product colors (cards only):** coral, magenta, blue, purple  
-- **Buttons:** pill-shaped (`rounded-full`); black primary, outline secondary  
-- **Glass:** frosted panels on Discover, mini-player, Now Playing, dock  
+---
 
-Brand accents are reserved for product-identity moments — not for generic body text.
-
-## Run
+## Getting started
 
 ```bash
+git clone https://github.com/Anu-Code07/music-on-the-go.git
+cd music-on-the-go
 flutter pub get
 dart run flutter_launcher_icons
 dart run flutter_native_splash:create
 flutter run
 ```
 
-Requires Flutter **3.35+** / Dart **3.9+**.
+Requires **Flutter 3.35+** / **Dart 3.9+**.
 
 ### iOS Live Activities (one-time)
 
-1. Open `ios/Runner.xcworkspace` in Xcode  
-2. For **Runner** and **AriaWidgets**: Signing → enable **App Groups** → `group.com.anurag.studio`  
-3. Run on a real device (iOS 16.1+) for Live Activities  
+1. Open `ios/Runner.xcworkspace`  
+2. Enable **App Groups** → `group.com.anurag.studio` on **Runner** and **AriaWidgets**  
+3. Run on a real device (iOS 16.1+)  
 
-### Android widgets / live notification
+### Android
 
-- Home widget: long-press home → widgets → **Aria Now Playing**  
-- Live notification appears while a track is playing (notifications permission may be required)
+- Allow notifications for the live now-playing shade  
+- Long-press home → widgets → **Aria Now Playing**  
+
+---
 
 ## Project layout
 
 ```
-lib/
-  core/           # theme, DI, router, shared widgets
-  features/       # home, player, library, playlist, discover, equalizer
-assets/
-  branding/       # app icon + splash
-  seed/           # bundled demo tracks
-ios/AriaWidgets/  # WidgetKit + ActivityKit
-android/.../      # StudioPlayerWidget + AriaLiveActivityManager
+lib/core/              theme, DI, router, shared widgets
+lib/features/          home, player, library, playlist, discover, equalizer
+assets/branding/       app icon & splash
+assets/seed/           bundled demo audio + art
+docs/screenshots/      README images
+ios/AriaWidgets/       WidgetKit + ActivityKit
+android/.../           StudioPlayerWidget + AriaLiveActivityManager
 ```
+
+---
 
 ## API keys
 
-Jamendo / TheAudioDB keys live in `lib/core/config/api_keys.dart` (in-repo for local demos). Rotate them if you publish the repo publicly.
+Jamendo / TheAudioDB keys are in `lib/core/config/api_keys.dart` for local demos.  
+**Rotate them** before shipping a public production build.
+
+---
 
 ## License
 
