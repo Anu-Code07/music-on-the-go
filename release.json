@@ -64,6 +64,17 @@
     }
   },
   "build": {
+    "script": "./scripts/release.sh",
+    "usage": [
+      "./scripts/release.sh",
+      "./scripts/release.sh apk",
+      "./scripts/release.sh aab",
+      "./scripts/release.sh android",
+      "./scripts/release.sh ios",
+      "./scripts/release.sh ios-nocodesign",
+      "./scripts/release.sh all",
+      "./scripts/release.sh --skip-pre apk"
+    ],
     "pre": [
       "flutter pub get",
       "dart run flutter_launcher_icons",

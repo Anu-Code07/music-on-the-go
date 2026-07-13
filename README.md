@@ -109,6 +109,22 @@ flutter run
 
 Requires **Flutter 3.35+** / **Dart 3.9+**.
 
+### Release builds
+
+```bash
+chmod +x scripts/release.sh
+./scripts/release.sh          # APK + AAB
+./scripts/release.sh apk      # APK only
+./scripts/release.sh aab      # Play Store bundle
+./scripts/release.sh ios      # IPA (Xcode signing required)
+```
+
+Artifacts:
+- `build/app/outputs/flutter-apk/app-release.apk`
+- `build/app/outputs/bundle/release/app-release.aab`
+
+See `release.json` for full build metadata.
+
 ### iOS Live Activities (one-time)
 
 1. Open `ios/Runner.xcworkspace`  
