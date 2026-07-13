@@ -1,0 +1,52 @@
+[
+  {
+    "id": "seed_1214935",
+    "jamendoId": "1214935",
+    "title": "Wish You Were Here",
+    "artist": "The.madpix.project",
+    "album": "Wish You Were Here",
+    "durationMs": 270000,
+    "audioAsset": "assets/seed/track_1.mp3",
+    "artAsset": "assets/seed/art_1.jpg"
+  },
+  {
+    "id": "seed_1932670",
+    "jamendoId": "1932670",
+    "title": "RED LIGHT",
+    "artist": "Egor Budennyy",
+    "album": "RED LIGHT",
+    "durationMs": 190000,
+    "audioAsset": "assets/seed/track_2.mp3",
+    "artAsset": "assets/seed/art_2.jpg"
+  },
+  {
+    "id": "seed_1204669",
+    "jamendoId": "1204669",
+    "title": "What Is Love",
+    "artist": "Melanie Ungar",
+    "album": "What Is Love",
+    "durationMs": 212000,
+    "audioAsset": "assets/seed/track_3.mp3",
+    "artAsset": "assets/seed/art_3.jpg"
+  },
+  {
+    "id": "seed_1141572",
+    "jamendoId": "1141572",
+    "title": "Love Will Come Back Again",
+    "artist": "Chaz Robinson",
+    "album": "Chaz Robinson",
+    "durationMs": 236000,
+    "audioAsset": "assets/seed/track_4.mp3",
+    "artAsset": "assets/seed/art_4.jpg"
+  },
+  {
+    "id": "seed_1157362",
+    "jamendoId": "1157362",
+    "title": "First",
+    "artist": "JekK",
+    "album": "Dear Dreams",
+    "durationMs": 204000,
+    "audioAsset": "assets/seed/track_5.mp3",
+    "artAsset": "assets/seed/art_5.jpg"
+  }
+]
