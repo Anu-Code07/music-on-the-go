@@ -1,0 +1,108 @@
+{
+  "name": "Aria",
+  "slug": "music-on-the-go",
+  "description": "Offline-first local music player — MiniMax UI, Jamendo discover, Live Activities",
+  "repository": "https://github.com/Anu-Code07/music-on-the-go",
+  "version": "1.0.0",
+  "buildNumber": 1,
+  "pubspecVersion": "1.0.0+1",
+  "flutterPackage": "studio",
+  "bundleId": "com.anurag.studio",
+  "applicationId": "com.anurag.studio",
+  "iosWidgetExtension": "com.anurag.studio.AriaWidgets",
+  "appGroup": "group.com.anurag.studio",
+  "minFlutter": "3.35.0",
+  "minDart": "3.9.0",
+  "platforms": {
+    "android": {
+      "enabled": true,
+      "applicationId": "com.anurag.studio",
+      "minSdk": "flutter.minSdkVersion",
+      "targetSdk": "flutter.targetSdkVersion",
+      "signing": "debug-fallback",
+      "artifacts": [
+        {
+          "type": "apk",
+          "command": "flutter build apk --release",
+          "output": "build/app/outputs/flutter-apk/app-release.apk"
+        },
+        {
+          "type": "appbundle",
+          "command": "flutter build appbundle --release",
+          "output": "build/app/outputs/bundle/release/app-release.aab"
+        }
+      ],
+      "features": [
+        "home_widget:StudioPlayerWidget",
+        "live_notification:AriaLiveActivityManager",
+        "equalizer:android_realtime"
+      ]
+    },
+    "ios": {
+      "enabled": true,
+      "bundleId": "com.anurag.studio",
+      "deploymentTarget": "13.0",
+      "liveActivitiesMinOs": "16.1",
+      "targets": ["Runner", "AriaWidgets"],
+      "entitlements": {
+        "appGroups": ["group.com.anurag.studio"],
+        "supportsLiveActivities": true
+      },
+      "artifacts": [
+        {
+          "type": "ipa",
+          "command": "flutter build ipa --release",
+          "output": "build/ios/ipa/*.ipa",
+          "notes": "Requires Xcode signing + App Groups on Runner and AriaWidgets"
+        },
+        {
+          "type": "ios-release-no-codesign",
+          "command": "flutter build ios --release --no-codesign",
+          "output": "build/ios/iphoneos/Runner.app"
+        }
+      ]
+    }
+  },
+  "build": {
+    "pre": [
+      "flutter pub get",
+      "dart run flutter_launcher_icons",
+      "dart run flutter_native_splash:create"
+    ],
+    "analyze": "flutter analyze",
+    "test": "flutter test",
+    "releaseAndroidApk": "flutter build apk --release",
+    "releaseAndroidAab": "flutter build appbundle --release",
+    "releaseIos": "flutter build ipa --release"
+  },
+  "env": {
+    "required": [],
+    "optional": [
+      "ANDROID_KEYSTORE_PATH",
+      "ANDROID_KEYSTORE_PASSWORD",
+      "ANDROID_KEY_ALIAS",
+      "ANDROID_KEY_PASSWORD"
+    ],
+    "notes": "Release currently uses debug signing fallback in android/app/build.gradle.kts — replace before Play Store upload."
+  },
+  "changelog": [
+    {
+      "version": "1.0.0",
+      "build": 1,
+      "date": "2026-07-13",
+      "highlights": [
+        "MiniMax light theme with vibrant product cards and glass UI",
+        "Discover (Jamendo) search, save-to-offline, and library",
+        "Immersive Now Playing with art backdrop",
+        "Equalizer presets (realtime on Android)",
+        "iOS Live Activities / Dynamic Island + home widget",
+        "Android live notification + home widget",
+        "Audio session activation and full volume on play"
+      ]
+    }
+  ],
+  "screenshots": [
+    "docs/screenshots/home.png",
+    "docs/screenshots/now-playing.png"
+  ]
+}
