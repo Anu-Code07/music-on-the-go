@@ -1,5 +1,5 @@
 name: studio
-description: Aria — minimal local music player
+description: Aria — offline-first music player for iOS and Android
 publish_to: "none"
 version: 1.0.0+1
 
@@ -9,12 +9,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.8
   flutter_bloc: ^9.1.1
   equatable: ^2.0.7
   get_it: ^8.0.3
   just_audio: ^0.9.46
-  audio_service: ^0.18.17
   audio_session: ^0.1.25
   dio: ^5.8.0+1
   path_provider: ^2.1.5
@@ -24,12 +22,10 @@ dependencies:
   google_fonts: ^6.2.1
   sqflite: ^2.4.2
   uuid: ^4.5.1
-  permission_handler: ^11.4.0
+  permission_handler: ^12.0.1
   home_widget: ^0.7.0
-  live_activities: ^2.4.2
+  live_activities: ^2.4.9
   shared_preferences: ^2.5.3
-  collection: ^1.19.1
-  rxdart: ^0.28.0
   flutter_native_splash: ^2.4.6
 
 dev_dependencies:
@@ -41,10 +37,9 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/audio/
-    - assets/images/
     - assets/seed/
-    - assets/branding/
+    - assets/branding/app_icon.png
+    - assets/branding/splash.png
 
 flutter_launcher_icons:
   android: true
@@ -53,15 +48,10 @@ flutter_launcher_icons:
   adaptive_icon_background: "#FFFFFF"
   adaptive_icon_foreground: assets/branding/app_icon.png
   remove_alpha_ios: true
-  web:
-    generate: true
-    image_path: assets/branding/app_icon.png
-    background_color: "#FFFFFF"
-    theme_color: "#0A0A0A"
 
 flutter_native_splash:
   color: "#FFFFFF"
-  image: assets/branding/app_icon.png
+  image: assets/branding/splash.png
   android_12:
     color: "#FFFFFF"
     image: assets/branding/app_icon.png

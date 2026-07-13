@@ -109,5 +109,13 @@ class AudioPlayerDataSource {
     if (idx != null) _currentIndex = idx;
   }
 
+  /// Keeps in-memory queue metadata (likes, paths) in sync with SQLite.
+  void updateTrackInQueue(Track updated) {
+    final index = _queue.indexWhere((t) => t.id == updated.id);
+    if (index < 0) return;
+    _queue = List.of(_queue);
+    _queue[index] = updated;
+  }
+
   Future<void> dispose() => _player.dispose();
 }

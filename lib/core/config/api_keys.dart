@@ -1,15 +1,19 @@
-/// API credentials kept in-repo so the project stays runnable after clone.
+/// Third-party API config for Discover / artwork lookup.
+///
+/// Override at build time for production:
+/// `flutter build ipa --dart-define=JAMENDO_CLIENT_ID=your_id`
 class ApiKeys {
   ApiKeys._();
 
-  /// TheAudioDB free test key (metadata + artwork only).
-  static const String theAudioDbKey = '123';
+  static const String theAudioDbKey = String.fromEnvironment(
+    'THEAUDIODB_KEY',
+    defaultValue: '123',
+  );
 
-  /// Jamendo "Anurag's App" — send with each API request.
-  static const String jamendoClientId = '9632b89c';
-
-  /// Jamendo client secret (OAuth write flows). Preserved in-repo as requested.
-  static const String jamendoClientSecret = '01882fae32c0efd755f7ef39f0cd5e32';
+  static const String jamendoClientId = String.fromEnvironment(
+    'JAMENDO_CLIENT_ID',
+    defaultValue: '9632b89c',
+  );
 
   static const String theAudioDbBaseUrl =
       'https://www.theaudiodb.com/api/v1/json';

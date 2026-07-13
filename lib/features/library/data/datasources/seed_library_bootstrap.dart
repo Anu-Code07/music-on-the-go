@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -16,7 +17,12 @@ class SeedLibraryBootstrap {
 
   Future<void> ensureSeeded() async {
     final loaded = await _local.getSetting(_seedsLoadedKey);
-    if (loaded == 'true') return;
+    if (loaded == 'true') {
+      final existing = await _local.getAllTracks();
+      // Recover from a prior run that marked seeds done but inserted nothing.
+      if (existing.isNotEmpty) return;
+      debugPrint('Seed flag set but library empty — retrying seed');
+    }
 
     final raw = await rootBundle.loadString('assets/seed/manifest.json');
     final entries = jsonDecode(raw) as List<dynamic>;
@@ -27,6 +33,7 @@ class SeedLibraryBootstrap {
       await musicDir.create(recursive: true);
     }
 
+    var seeded = 0;
     for (final entry in entries) {
       try {
         final map = entry as Map<String, dynamic>;
@@ -50,7 +57,8 @@ class SeedLibraryBootstrap {
               artBytes.buffer
                   .asUint8List(artBytes.offsetInBytes, artBytes.lengthInBytes),
             );
-          } catch (_) {
+          } catch (e) {
+            debugPrint('Seed art skipped for $id: $e');
             artPath = null;
           }
         }
@@ -68,11 +76,16 @@ class SeedLibraryBootstrap {
           source: TrackSource.seed,
         );
         await _local.upsertTrack(track);
-      } catch (_) {
-        // Skip missing or invalid seed entries.
+        seeded++;
+      } catch (e, st) {
+        debugPrint('Seed entry failed: $e\n$st');
       }
     }
 
-    await _local.setSetting(_seedsLoadedKey, 'true');
+    if (seeded > 0 || entries.isEmpty) {
+      await _local.setSetting(_seedsLoadedKey, 'true');
+    } else {
+      debugPrint('Seed inserted 0 tracks — will retry next launch');
+    }
   }
 }

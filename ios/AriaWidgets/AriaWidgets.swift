@@ -106,7 +106,10 @@ struct StudioPlayerWidgetView: View {
 struct LiveActivitiesAppAttributes: ActivityAttributes, Identifiable {
   public typealias LiveDeliveryData = ContentState
 
-  public struct ContentState: Codable, Hashable {}
+  // Must match LiveActivitiesPlugin ContentState (appGroupId required).
+  public struct ContentState: Codable, Hashable {
+    var appGroupId: String
+  }
 
   var id = UUID()
 }
@@ -117,7 +120,10 @@ extension LiveActivitiesAppAttributes {
   }
 }
 
-let sharedDefault = UserDefaults(suiteName: appGroupId)!
+private func sharedDefaults(for context: ActivityViewContext<LiveActivitiesAppAttributes>) -> UserDefaults? {
+  let groupId = context.state.appGroupId.isEmpty ? appGroupId : context.state.appGroupId
+  return UserDefaults(suiteName: groupId) ?? UserDefaults(suiteName: appGroupId)
+}
 
 @available(iOSApplicationExtension 16.1, *)
 struct AriaLiveActivityWidget: Widget {
@@ -125,10 +131,11 @@ struct AriaLiveActivityWidget: Widget {
     ActivityConfiguration(for: LiveActivitiesAppAttributes.self) { context in
       lockScreenView(for: context)
     } dynamicIsland: { context in
-      let title = sharedDefault.string(forKey: context.attributes.prefixedKey("title")) ?? "Aria"
-      let artist = sharedDefault.string(forKey: context.attributes.prefixedKey("artist")) ?? ""
-      let isPlaying = sharedDefault.bool(forKey: context.attributes.prefixedKey("isPlaying"))
-      let status = sharedDefault.string(forKey: context.attributes.prefixedKey("status"))
+      let defaults = sharedDefaults(for: context)
+      let title = defaults?.string(forKey: context.attributes.prefixedKey("title")) ?? "Aria"
+      let artist = defaults?.string(forKey: context.attributes.prefixedKey("artist")) ?? ""
+      let isPlaying = defaults?.bool(forKey: context.attributes.prefixedKey("isPlaying")) ?? false
+      let status = defaults?.string(forKey: context.attributes.prefixedKey("status"))
         ?? (isPlaying ? "Playing" : "Paused")
 
       return DynamicIsland {
@@ -179,54 +186,85 @@ struct AriaLiveActivityWidget: Widget {
   private func lockScreenView(
     for context: ActivityViewContext<LiveActivitiesAppAttributes>
   ) -> some View {
-    let title = sharedDefault.string(forKey: context.attributes.prefixedKey("title")) ?? "Aria"
-    let artist = sharedDefault.string(forKey: context.attributes.prefixedKey("artist")) ?? ""
-    let isPlaying = sharedDefault.bool(forKey: context.attributes.prefixedKey("isPlaying"))
-    let status = sharedDefault.string(forKey: context.attributes.prefixedKey("status"))
+    let defaults = sharedDefaults(for: context)
+    let title = defaults?.string(forKey: context.attributes.prefixedKey("title")) ?? "Aria"
+    let artist = defaults?.string(forKey: context.attributes.prefixedKey("artist")) ?? ""
+    let isPlaying = defaults?.bool(forKey: context.attributes.prefixedKey("isPlaying")) ?? false
+    let status = defaults?.string(forKey: context.attributes.prefixedKey("status"))
       ?? (isPlaying ? "Playing" : "Paused")
-    let artworkPath = sharedDefault.string(forKey: context.attributes.prefixedKey("artworkPath"))
+    let artworkPath = defaults?.string(forKey: context.attributes.prefixedKey("artworkPath"))
+    let durationMs = defaults?.double(forKey: context.attributes.prefixedKey("durationMs")) ?? 0
+    let positionMs = defaults?.double(forKey: context.attributes.prefixedKey("positionMs")) ?? 0
+    let progress = durationMs > 0 ? min(max(positionMs / durationMs, 0), 1) : 0
 
-    HStack(spacing: 14) {
-      ZStack {
-        RoundedRectangle(cornerRadius: 12, style: .continuous)
-          .fill(Color.white.opacity(0.12))
-          .frame(width: 56, height: 56)
-        if let artworkPath,
-          !artworkPath.isEmpty,
-          let image = UIImage(contentsOfFile: artworkPath)
-        {
-          Image(uiImage: image)
-            .resizable()
-            .aspectRatio(contentMode: .fill)
+    VStack(spacing: 12) {
+      HStack(spacing: 14) {
+        ZStack {
+          RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .fill(Color.white.opacity(0.12))
             .frame(width: 56, height: 56)
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        } else {
-          Image(systemName: "music.note")
-            .foregroundStyle(.white.opacity(0.8))
+          if let artworkPath,
+            !artworkPath.isEmpty,
+            let image = UIImage(contentsOfFile: artworkPath)
+          {
+            Image(uiImage: image)
+              .resizable()
+              .aspectRatio(contentMode: .fill)
+              .frame(width: 56, height: 56)
+              .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+          } else {
+            Image(systemName: "music.note")
+              .foregroundStyle(.white.opacity(0.8))
+          }
         }
-      }
 
-      VStack(alignment: .leading, spacing: 4) {
-        Text(title)
-          .font(.system(size: 16, weight: .semibold))
-          .foregroundStyle(.white)
-          .lineLimit(1)
-        Text(artist)
-          .font(.system(size: 13, weight: .regular))
-          .foregroundStyle(.white.opacity(0.72))
-          .lineLimit(1)
+        VStack(alignment: .leading, spacing: 4) {
+          Text("ARIA")
+            .font(.system(size: 10, weight: .semibold))
+            .tracking(1.5)
+            .foregroundStyle(.white.opacity(0.55))
+          Text(title)
+            .font(.system(size: 16, weight: .semibold))
+            .foregroundStyle(.white)
+            .lineLimit(1)
+          Text(artist)
+            .font(.system(size: 13, weight: .regular))
+            .foregroundStyle(.white.opacity(0.72))
+            .lineLimit(1)
+        }
+        Spacer(minLength: 0)
         Text(status.uppercased())
           .font(.system(size: 11, weight: .semibold))
           .foregroundStyle(Color(red: 1.0, green: 0.33, blue: 0.19))
       }
-      Spacer(minLength: 0)
-      Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
-        .font(.system(size: 34))
-        .foregroundStyle(.white)
+
+      ProgressView(value: progress)
+        .tint(Color(red: 1.0, green: 0.33, blue: 0.19))
+
+      HStack(spacing: 28) {
+        Link(destination: URL(string: "aria://previous")!) {
+          Image(systemName: "backward.fill")
+            .font(.system(size: 20, weight: .semibold))
+            .foregroundStyle(.white)
+            .frame(width: 44, height: 44)
+        }
+        Link(destination: URL(string: "aria://toggle")!) {
+          Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
+            .font(.system(size: 40, weight: .regular))
+            .foregroundStyle(.white)
+            .frame(width: 52, height: 52)
+        }
+        Link(destination: URL(string: "aria://next")!) {
+          Image(systemName: "forward.fill")
+            .font(.system(size: 20, weight: .semibold))
+            .foregroundStyle(.white)
+            .frame(width: 44, height: 44)
+        }
+      }
     }
     .padding(.horizontal, 16)
     .padding(.vertical, 14)
-    .activityBackgroundTint(Color.black.opacity(0.85))
+    .activityBackgroundTint(Color.black.opacity(0.88))
     .activitySystemActionForegroundColor(.white)
   }
 }

@@ -54,7 +54,7 @@ fi
 
 build_apk() {
   echo "==> Building APK (release)"
-  flutter build apk --release
+  flutter build apk --release --obfuscate --split-debug-info=build/debug-info
   local out="build/app/outputs/flutter-apk/app-release.apk"
   ls -lh "$out"
   echo "APK: $ROOT/$out"
@@ -62,7 +62,7 @@ build_apk() {
 
 build_aab() {
   echo "==> Building App Bundle (release)"
-  flutter build appbundle --release
+  flutter build appbundle --release --obfuscate --split-debug-info=build/debug-info
   local out="build/app/outputs/bundle/release/app-release.aab"
   ls -lh "$out"
   echo "AAB: $ROOT/$out"
@@ -70,14 +70,14 @@ build_aab() {
 
 build_ios() {
   echo "==> Building IPA (release)"
-  flutter build ipa --release
+  flutter build ipa --release --obfuscate --split-debug-info=build/debug-info
   echo "IPA dir: $ROOT/build/ios/ipa"
   ls -lh build/ios/ipa/* 2>/dev/null || true
 }
 
 build_ios_nocodesign() {
   echo "==> Building iOS release (no codesign)"
-  flutter build ios --release --no-codesign
+  flutter build ios --release --no-codesign --obfuscate --split-debug-info=build/debug-info
   echo "APP: $ROOT/build/ios/iphoneos/Runner.app"
 }
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -175,6 +177,12 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     _audio.playingStream.listen((_) => _emitTick());
     _audio.currentIndexStream.listen((_) => _emitTick());
     _audio.durationStream.listen((_) => _emitTick());
+
+    // Lock screen / Live Activity / Control Center remote commands.
+    // ignore: discarded_futures
+    _widgetBridge.ensureInitialized().then((_) {
+      _remoteSub = _widgetBridge.remoteActions.listen(_onRemoteAction);
+    });
   }
 
   final AudioPlayerDataSource _audio;
@@ -183,9 +191,25 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
   final ToggleLike _toggleLike;
   final LibraryRepository _library;
   final WidgetBridgeDataSource _widgetBridge;
+  StreamSubscription<RemotePlayerAction>? _remoteSub;
 
   bool _shuffle = false;
   LoopMode _repeat = LoopMode.off;
+
+  void _onRemoteAction(RemotePlayerAction action) {
+    switch (action) {
+      case RemotePlayerAction.play:
+        if (!_audio.player.playing) add(const Toggle());
+      case RemotePlayerAction.pause:
+        if (_audio.player.playing) add(const Pause());
+      case RemotePlayerAction.toggle:
+        add(const Toggle());
+      case RemotePlayerAction.next:
+        add(const Next());
+      case RemotePlayerAction.previous:
+        add(const Previous());
+    }
+  }
 
   PlayerReady get _ready => state is PlayerReady
       ? state as PlayerReady
@@ -292,14 +316,19 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     final track = _ready.track;
     if (track == null) return;
     try {
+      // Ensure the row exists before liking (Discover play without Save).
+      await _library.upsertTrack(track);
       await _toggleLike(track.id);
       final updated = await _library.getTrack(track.id);
+      if (updated != null) {
+        _audio.updateTrackInQueue(updated);
+      }
       emit(_ready.copyWith(
         track: updated ?? track,
         isLiked: updated?.isLiked ?? !track.isLiked,
       ));
     } catch (e) {
-      debugPrint('Like failed (save track first?): $e');
+      debugPrint('Like failed: $e');
     }
   }
 
@@ -353,5 +382,11 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       duration: _audio.player.duration,
       forceLive: true,
     );
+  }
+
+  @override
+  Future<void> close() async {
+    await _remoteSub?.cancel();
+    return super.close();
   }
 }

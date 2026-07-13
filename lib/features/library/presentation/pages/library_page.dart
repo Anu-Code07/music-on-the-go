@@ -65,7 +65,9 @@ class LibraryPage extends StatelessWidget {
                     IconButton(
                       icon: Icon(
                         track.isLiked ? Icons.favorite : Icons.favorite_border,
-                        color: track.isLiked ? StudioColors.negative : StudioColors.silver,
+                        color: track.isLiked
+                            ? StudioColors.brandCoral
+                            : StudioColors.steel,
                       ),
                       onPressed: () =>
                           context.read<LibraryBloc>().add(ToggleLike(track.id)),

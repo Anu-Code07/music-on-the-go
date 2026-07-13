@@ -171,8 +171,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
                       if (prev is DiscoverLoaded &&
                           next is DiscoverLoaded &&
                           prev.savingTrackId != null &&
-                          next.savingTrackId == null &&
-                          next.downloadProgress >= 1) {
+                          next.savingTrackId == null) {
                         return true;
                       }
                       return false;
@@ -189,6 +188,9 @@ class _DiscoverPageState extends State<DiscoverPage> {
                         context
                             .read<LibraryBloc>()
                             .add(const RefreshLibrary());
+                        context
+                            .read<DiscoverBloc>()
+                            .add(const RefreshSavedFlags());
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text('Track saved to library'),
@@ -252,44 +254,79 @@ class _DiscoverPageState extends State<DiscoverPage> {
                         itemBuilder: (context, i) {
                           final track = state.tracks[i];
                           final saving = state.savingTrackId == track.id;
+                          final saved = state.isSaved(track);
+                          final downloadInProgress = state.savingTrackId != null;
                           final accent = [
                             StudioColors.brandCoral,
                             StudioColors.brandMagenta,
                             StudioColors.brandBlue,
                             StudioColors.brandPurple,
                           ][i % 4];
-                          return GlassPanel(
-                            borderRadius: 20,
-                            blur: 16,
-                            tint: Colors.white.withValues(alpha: 0.72),
-                            padding: EdgeInsets.zero,
-                            child: TrackListTile(
-                              track: track,
-                              onTap: () => playAndOpenNowPlaying(context, track),
-                              trailing: saving
-                                  ? Padding(
-                                      padding: const EdgeInsets.only(right: 8),
-                                      child: SizedBox(
-                                        width: 24,
-                                        height: 24,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2.5,
-                                          color: accent,
-                                          value: state.downloadProgress > 0
-                                              ? state.downloadProgress
-                                              : null,
+                          return Opacity(
+                            opacity: saving ? 0.72 : 1,
+                            child: GlassPanel(
+                              borderRadius: 20,
+                              blur: 16,
+                              tint: Colors.white.withValues(alpha: 0.72),
+                              padding: EdgeInsets.zero,
+                              child: TrackListTile(
+                                track: track,
+                                // Don't open/play a track while it is downloading.
+                                onTap: saving
+                                    ? null
+                                    : () => playAndOpenNowPlaying(context, track),
+                                trailing: saving
+                                    ? Padding(
+                                        padding:
+                                            const EdgeInsets.only(right: 8),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              '${(state.downloadProgress * 100).clamp(0, 99).round()}%',
+                                              style: GoogleFonts.dmSans(
+                                                color: accent,
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            SizedBox(
+                                              width: 22,
+                                              height: 22,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2.5,
+                                                color: accent,
+                                                value: state.downloadProgress >
+                                                        0.02
+                                                    ? state.downloadProgress
+                                                    : null,
+                                              ),
+                                            ),
+                                          ],
                                         ),
+                                      )
+                                    : Padding(
+                                        padding:
+                                            const EdgeInsets.only(right: 4),
+                                        child: saved
+                                            ? const StudioPillButton(
+                                                label: 'Saved',
+                                                icon: Icons.check_rounded,
+                                                filled: true,
+                                                tone: StudioPillTone.saved,
+                                                onPressed: null,
+                                              )
+                                            : StudioPillButton(
+                                                label: 'Save',
+                                                onPressed: downloadInProgress
+                                                    ? null
+                                                    : () => context
+                                                        .read<DiscoverBloc>()
+                                                        .add(SaveTrack(track)),
+                                              ),
                                       ),
-                                    )
-                                  : Padding(
-                                      padding: const EdgeInsets.only(right: 4),
-                                      child: StudioPillButton(
-                                        label: 'Save',
-                                        onPressed: () => context
-                                            .read<DiscoverBloc>()
-                                            .add(SaveTrack(track)),
-                                      ),
-                                    ),
+                              ),
                             ),
                           );
                         },

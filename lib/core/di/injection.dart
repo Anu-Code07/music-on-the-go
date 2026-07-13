@@ -120,6 +120,7 @@ Future<void> configureDependencies() async {
       getPopular: getIt(),
       search: getIt(),
       saveTrack: getIt(),
+      library: getIt(),
     ),
   );
   getIt.registerFactory(() => EqualizerBloc(getIt()));

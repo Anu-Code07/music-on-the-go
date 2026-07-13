@@ -14,8 +14,10 @@ import 'features/player/data/datasources/widget_bridge_data_source.dart';
 import 'features/player/presentation/bloc/player_bloc.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  FlutterNativeSplash.remove();
+  final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  // Keep the native splash up until the first Flutter brand frame paints,
+  // otherwise iOS can flash a stale cached launch/icon for a moment.
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -63,19 +65,30 @@ class _AriaAppState extends State<AriaApp> {
         debugPrint('Widget bridge init: $e');
       });
 
-      // ignore: unawaited_futures
-      getIt<EnsureSeedLibrary>()().catchError((Object e, StackTrace st) {
+      final seedFuture = getIt<EnsureSeedLibrary>()().catchError((
+        Object e,
+        StackTrace st,
+      ) {
         debugPrint('Seed failed: $e\n$st');
       });
 
       if (!mounted) return;
       setState(() => _phase = _LaunchPhase.brand);
+      // Drop native splash only after Flutter brand UI is scheduled.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        FlutterNativeSplash.remove();
+      });
 
-      await Future<void>.delayed(const Duration(milliseconds: 1400));
+      // Finish seed before Library loads so first paint isn't empty.
+      await Future.wait<void>([
+        Future<void>.delayed(const Duration(milliseconds: 1400)),
+        seedFuture,
+      ]);
       if (!mounted) return;
       setState(() => _phase = _LaunchPhase.ready);
     } catch (e, st) {
       debugPrint('Boot failed: $e\n$st');
+      FlutterNativeSplash.remove();
       if (!mounted) return;
       setState(() {
         _error = e.toString();

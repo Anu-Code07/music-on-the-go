@@ -26,6 +26,7 @@ class JamendoDataSource {
         'namesearch': query.trim(),
         'include': 'musicinfo',
         'audioformat': 'mp32',
+        'audiodlformat': 'mp32',
       },
     );
     return _parseTracks(response.data);
@@ -44,6 +45,7 @@ class JamendoDataSource {
           'order': order,
           'include': 'musicinfo',
           'audioformat': 'mp32',
+          'audiodlformat': 'mp32',
         },
       );
       return _parseTracks(response.data);
@@ -57,26 +59,49 @@ class JamendoDataSource {
     return fetch('buzzrate');
   }
 
-  Future<Track> downloadTrack(Track track) async {
-    final downloadUrl = track.streamUrl;
+  Future<Track> downloadTrack(
+    Track track, {
+    void Function(double progress)? onProgress,
+  }) async {
+    final jamendoId = track.jamendoId;
+    final downloadUrl = (jamendoId != null && jamendoId.isNotEmpty)
+        ? '${ApiKeys.jamendoBaseUrl}/tracks/file/'
+            '?client_id=${ApiKeys.jamendoClientId}'
+            '&id=$jamendoId'
+            '&audioformat=mp32'
+            '&action=download'
+        : track.streamUrl;
     if (downloadUrl == null || downloadUrl.isEmpty) {
       throw Exception('Track has no download URL');
     }
 
     final musicDir = await _musicDirectory();
-    final id = track.jamendoId ?? track.id.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
+    final id = jamendoId ??
+        track.id.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
     final audioPath = p.join(musicDir.path, '$id.mp3');
     final artPath = p.join(musicDir.path, '$id.jpg');
 
+    onProgress?.call(0.02);
     try {
       await _dio.download(
         downloadUrl,
         audioPath,
+        onReceiveProgress: (received, total) {
+          if (total <= 0) return;
+          // Reserve 0.02–0.85 for the audio file download.
+          final ratio = (received / total).clamp(0.0, 1.0);
+          onProgress?.call(0.02 + (ratio * 0.83));
+        },
         options: Options(
           followRedirects: true,
+          maxRedirects: 5,
           validateStatus: (s) => s != null && s < 400,
-          receiveTimeout: const Duration(minutes: 2),
+          receiveTimeout: const Duration(minutes: 3),
           sendTimeout: const Duration(seconds: 30),
+          headers: const {
+            'Accept': '*/*',
+            'User-Agent': 'Aria/1.0 (iOS; music-on-the-go)',
+          },
         ),
       );
     } on DioException catch (e) {
@@ -87,6 +112,7 @@ class JamendoDataSource {
     if (!await file.exists() || await file.length() < 1024) {
       throw Exception('Downloaded file is empty or too small');
     }
+    onProgress?.call(0.88);
 
     String? savedArtPath;
     final artUrl = track.artworkUrl;
@@ -98,9 +124,10 @@ class JamendoDataSource {
         savedArtPath = null;
       }
     }
+    onProgress?.call(0.95);
 
     return track.copyWith(
-      id: track.jamendoId != null ? 'jamendo_${track.jamendoId}' : track.id,
+      id: jamendoId != null ? 'jamendo_$jamendoId' : track.id,
       filePath: audioPath,
       artworkPath: savedArtPath ?? track.artworkPath,
       isLocal: true,

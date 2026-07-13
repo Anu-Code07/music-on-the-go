@@ -31,13 +31,29 @@ class LocalLibraryDataSource {
   Future<Database> _open() async {
     final dir = await getApplicationDocumentsDirectory();
     final path = p.join(dir.path, 'studio.db');
+    try {
+      return await _openAt(path);
+    } catch (e) {
+      // Recover from a broken/partial open (common after pragma failures).
+      await deleteDatabase(path);
+      return _openAt(path);
+    }
+  }
+
+  Future<Database> _openAt(String path) {
     return openDatabase(
       path,
       version: 1,
       singleInstance: true,
       onConfigure: (db) async {
-        await db.rawQuery('PRAGMA busy_timeout = 5000');
-        await db.execute('PRAGMA journal_mode=WAL');
+        // Darwin throws DatabaseException("not an error") for some PRAGMAs
+        // when using execute(); rawQuery is required. Never fail open on this.
+        try {
+          await db.rawQuery('PRAGMA busy_timeout=5000');
+        } catch (_) {}
+        try {
+          await db.rawQuery('PRAGMA journal_mode=WAL');
+        } catch (_) {}
       },
       onCreate: (db, version) async {
         await db.execute('''
@@ -91,11 +107,61 @@ class LocalLibraryDataSource {
 
   Future<void> upsertTrack(Track track) async {
     final db = await database;
-    await db.insert(
+    final rows = await db.query(
       'tracks',
-      _trackToMap(track),
-      conflictAlgorithm: ConflictAlgorithm.replace,
+      where: 'id = ?',
+      whereArgs: [track.id],
     );
+
+    if (rows.isEmpty) {
+      await db.insert('tracks', _trackToMap(track));
+      return;
+    }
+
+    // Merge instead of REPLACE — playing a Discover stream track must not
+    // wipe file_path, likes, artwork, or is_local from a prior Save.
+    final existing = _trackFromMap(rows.first);
+    final createdAt = rows.first['created_at'] as int;
+    final merged = _mergeTrack(existing, track);
+    await db.update(
+      'tracks',
+      _trackToMap(merged, createdAtMs: createdAt),
+      where: 'id = ?',
+      whereArgs: [track.id],
+    );
+  }
+
+  Track _mergeTrack(Track existing, Track incoming) {
+    final filePath = _preferNonEmpty(incoming.filePath, existing.filePath);
+    final artworkPath =
+        _preferNonEmpty(incoming.artworkPath, existing.artworkPath);
+    return Track(
+      id: existing.id,
+      title: incoming.title.isNotEmpty ? incoming.title : existing.title,
+      artist: incoming.artist.isNotEmpty ? incoming.artist : existing.artist,
+      album: incoming.album.isNotEmpty ? incoming.album : existing.album,
+      durationMs:
+          incoming.durationMs > 0 ? incoming.durationMs : existing.durationMs,
+      filePath: filePath,
+      artworkUrl: _preferNonEmpty(incoming.artworkUrl, existing.artworkUrl),
+      artworkPath: artworkPath,
+      streamUrl: _preferNonEmpty(incoming.streamUrl, existing.streamUrl),
+      jamendoId: _preferNonEmpty(incoming.jamendoId, existing.jamendoId),
+      // Likes are toggled via setLiked — never clear via a thin stream upsert.
+      isLiked: existing.isLiked || incoming.isLiked,
+      isLocal: existing.isLocal ||
+          incoming.isLocal ||
+          (filePath != null && filePath.isNotEmpty),
+      source: (filePath != null && filePath.isNotEmpty && !incoming.isLocal)
+          ? existing.source
+          : incoming.source,
+    );
+  }
+
+  String? _preferNonEmpty(String? preferred, String? fallback) {
+    if (preferred != null && preferred.isNotEmpty) return preferred;
+    if (fallback != null && fallback.isNotEmpty) return fallback;
+    return preferred ?? fallback;
   }
 
   Future<List<Track>> getAllTracks() async {
@@ -272,7 +338,7 @@ class LocalLibraryDataSource {
     await setSetting(key, jsonEncode(value));
   }
 
-  Map<String, Object?> _trackToMap(Track track) {
+  Map<String, Object?> _trackToMap(Track track, {int? createdAtMs}) {
     return {
       'id': track.id,
       'title': track.title,
@@ -287,7 +353,7 @@ class LocalLibraryDataSource {
       'is_liked': track.isLiked ? 1 : 0,
       'is_local': track.isLocal ? 1 : 0,
       'source': track.source.name,
-      'created_at': DateTime.now().millisecondsSinceEpoch,
+      'created_at': createdAtMs ?? DateTime.now().millisecondsSinceEpoch,
     };
   }
 

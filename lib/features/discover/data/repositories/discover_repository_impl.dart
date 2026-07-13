@@ -26,15 +26,17 @@ class DiscoverRepositoryImpl implements DiscoverRepository {
     Track track, {
     void Function(double progress)? onProgress,
   }) async {
-    onProgress?.call(0.1);
-    var saved = await _jamendo.downloadTrack(track);
-    onProgress?.call(0.7);
+    var saved = await _jamendo.downloadTrack(
+      track,
+      onProgress: onProgress,
+    );
 
     final artUrl = await _audioDb.searchArtist(saved.artist);
-    if (artUrl != null && (saved.artworkUrl == null || saved.artworkUrl!.isEmpty)) {
+    if (artUrl != null &&
+        (saved.artworkUrl == null || saved.artworkUrl!.isEmpty)) {
       saved = saved.copyWith(artworkUrl: artUrl);
     }
-    onProgress?.call(0.9);
+    onProgress?.call(0.97);
 
     await _local.upsertTrack(saved);
     onProgress?.call(1.0);
