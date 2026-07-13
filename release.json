@@ -41,7 +41,7 @@
     "ios": {
       "enabled": true,
       "bundleId": "com.anurag.studio",
-      "deploymentTarget": "13.0",
+      "deploymentTarget": "14.0",
       "liveActivitiesMinOs": "16.1",
       "targets": ["Runner", "AriaWidgets"],
       "entitlements": {
